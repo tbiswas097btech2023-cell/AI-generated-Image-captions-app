@@ -20,14 +20,27 @@ const Index = () => {
     setIsGenerating(true);
     setCaption("");
 
-    // Simulate API call - replace this with your actual backend integration
     try {
-      // This is a placeholder - integrate with your backend or Lovable AI
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Extract base64 data from the data URL
+      const base64Data = selectedImage.split(',')[1];
       
-      // Mock caption for demonstration
-      setCaption("A beautiful moment captured in time, showcasing vibrant colors and interesting composition.");
-      
+      // Call your Flask backend
+      const response = await fetch('http://localhost:5000/caption', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64Data
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate caption');
+      }
+
+      const data = await response.json();
+      setCaption(data.caption);
       toast.success("Caption generated successfully!");
     } catch (error) {
       toast.error("Failed to generate caption. Please try again.");
