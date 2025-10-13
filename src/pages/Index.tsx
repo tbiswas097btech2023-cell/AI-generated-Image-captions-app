@@ -5,6 +5,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { CaptionDisplay } from "@/components/CaptionDisplay";
 import { FloatingIcons } from "@/components/FloatingIcons";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -24,27 +25,24 @@ const Index = () => {
       // Extract base64 data from the data URL
       const base64Data = selectedImage.split(',')[1];
       
-      // Call your Flask backend
-      const response = await fetch('http://localhost:5000/caption', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: base64Data
-        }),
+      // Call Lovable Cloud edge function for AI-powered captioning
+      const { data, error } = await supabase.functions.invoke('generate-caption', {
+        body: { image: base64Data }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate caption');
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       setCaption(data.caption);
       toast.success("Caption generated successfully!");
-    } catch (error) {
-      toast.error("Failed to generate caption. Please try again.");
-      console.error(error);
+    } catch (error: any) {
+      console.error('Caption generation error:', error);
+      toast.error(error.message || "Failed to generate caption. Please try again.");
     } finally {
       setIsGenerating(false);
     }
